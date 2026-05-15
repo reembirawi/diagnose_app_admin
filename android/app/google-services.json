@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1053671037599",
+    "firebase_url": "https://dermalyze-ff063-default-rtdb.firebaseio.com",
+    "project_id": "dermalyze-ff063",
+    "storage_bucket": "dermalyze-ff063.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053671037599:android:cceb26d03c265a5d37e0aa",
+        "android_client_info": {
+          "package_name": "com.example.diagnose_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAU8rwIWpZS0PdMCdeh7ruLSOsTJmHOqQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
