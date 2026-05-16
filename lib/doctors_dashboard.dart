@@ -9,7 +9,6 @@ import 'package:diagnose_app/weekly_scan_chart.dart';
 import 'package:diagnose_app/filter_tabs.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class DoctorsDashboard extends StatefulWidget {
   const DoctorsDashboard({super.key});
 
@@ -18,12 +17,12 @@ class DoctorsDashboard extends StatefulWidget {
 }
 
 class _DoctorsDashboardState extends State<DoctorsDashboard> {
-
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
   List<Report> _reports = [];
   List<Report> _filteredReports = [];
   String filterTab = "All";
   String sortOption = "Name A–Z";
+  bool _reportsLoaded = false;
 
   final List<String> sortOptions = [
     "Name A–Z",
@@ -34,8 +33,9 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
 
   Future<List<Report>> _getReports() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('reports').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .get();
 
       return snapshot.docs
           .map((doc) => Report.fromMap(doc.id, doc.data()))
@@ -55,6 +55,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
       setState(() {
         _reports = doc;
         _filteredReports = doc;
+        _reportsLoaded = true;
       });
     });
   }
@@ -82,6 +83,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
         "${date.month.toString().padLeft(2, '0')}/"
         "${date.year}";
   }
+
   /// Rating = completed scans / (completed + remaining scans)
   double _computeRating(Map<String, dynamic> data) {
     final completed = (data['scans_done'] ?? 0) as num;
@@ -96,15 +98,19 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
     switch (sortOption) {
       case "Name A–Z":
         sorted.sort((a, b) {
-          final aName = ((a.data() as Map<String, dynamic>)['name'] ?? '') as String;
-          final bName = ((b.data() as Map<String, dynamic>)['name'] ?? '') as String;
+          final aName =
+              ((a.data() as Map<String, dynamic>)['name'] ?? '') as String;
+          final bName =
+              ((b.data() as Map<String, dynamic>)['name'] ?? '') as String;
           return aName.toLowerCase().compareTo(bName.toLowerCase());
         });
         break;
       case "Name Z–A":
         sorted.sort((a, b) {
-          final aName = ((a.data() as Map<String, dynamic>)['name'] ?? '') as String;
-          final bName = ((b.data() as Map<String, dynamic>)['name'] ?? '') as String;
+          final aName =
+              ((a.data() as Map<String, dynamic>)['name'] ?? '') as String;
+          final bName =
+              ((b.data() as Map<String, dynamic>)['name'] ?? '') as String;
           return bName.toLowerCase().compareTo(aName.toLowerCase());
         });
         break;
@@ -140,7 +146,16 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
               final doctorData = doc.data() as Map<String, dynamic>;
               return SizedBox(
                 width: cardWidth,
-                child: _buildDoctorCard(doctorData, doc.id),
+                child: _buildDoctorCard(
+                  doctorData,
+                  doc.id,
+                  _reports
+                      .where((r) => r.doctorId == doc.id && r.submit == true)
+                      .length,
+                  _reports
+                      .where((r) => r.doctorId == doc.id && r.submit == false)
+                      .length,
+                ),
               );
             }).toList(),
           ),
@@ -161,18 +176,12 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
             children: [
               const Text(
                 'Doctors Dashboard',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
               ),
 
               const Text(
                 "Manage all registered doctors and approvals",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
               ),
 
               const SizedBox(height: 20),
@@ -180,10 +189,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
               _buildRow4(),
 
               const SizedBox(height: 20),
-              const Divider(
-                color: Colors.black,
-                thickness: 2,
-              ),
+              const Divider(color: Colors.black, thickness: 2),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -312,6 +318,9 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                       ),
                     );
                   }
+                  if (!_reportsLoaded) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
                   final doctors = snapshot.data!.docs;
 
@@ -407,7 +416,12 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
     );
   }
 
-  Widget _buildDoctorCard(Map<String, dynamic> doctorData, String docId) {
+  Widget _buildDoctorCard(
+    Map<String, dynamic> doctorData,
+    String docId,
+    int scansDone,
+    int scansRemaining,
+  ) {
     final name = doctorData['name'] ?? 'No Name';
     final secondName = doctorData['secondName'] ?? '';
     final email = doctorData['email'] ?? 'No Email';
@@ -416,14 +430,11 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
     final location = doctorData['location'] ?? 'Unknown';
     final status = doctorData['status'] ?? 'pending';
     final yearsExp = doctorData['years_experience'] ?? 0;
-    final scansDone = (doctorData['scans_done'] ?? 0) as num;
-    final scansRemaining = (doctorData['scans_remaining'] ?? 0) as num;
     final appliedAt = doctorData['created_at'] != null
         ? (doctorData['created_at'] as Timestamp).toDate()
         : null;
     final licenseVerified = doctorData['license_verified'] ?? false;
     final certificateUrl = doctorData['certificateUrl'];
-
 
     // Rating = completed / total
     final totalScans = scansDone + scansRemaining;
@@ -526,8 +537,11 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined,
-                            size: 11, color: Color(0xFF9CA3AF)),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: Color(0xFF9CA3AF),
+                        ),
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
@@ -572,7 +586,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
               Container(width: 1, height: 30, color: const Color(0xFFE8E8F0)),
               Expanded(child: _buildStatItem('$scansDone', 'Scans done')),
               Container(width: 1, height: 30, color: const Color(0xFFE8E8F0)),
-              Expanded(child: _buildStatItem(ratingDisplay, 'Rating')),
+              Expanded(child: _buildStatItem(ratingDisplay, 'Done ratio')),
             ],
           ),
 
@@ -697,7 +711,9 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                                         borderRadius: BorderRadius.circular(18),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.08),
+                                            color: Colors.black.withOpacity(
+                                              0.08,
+                                            ),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           ),
@@ -715,7 +731,8 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                                             Icons.cake,
                                             "Date of Birth",
                                             formatDate(
-                                              (birthDate as Timestamp?)?.toDate(),
+                                              (birthDate as Timestamp?)
+                                                  ?.toDate(),
                                             ),
                                           ),
                                         ],
@@ -734,31 +751,37 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                                             context: context,
                                             builder: (_) => Dialog(
                                               child: InteractiveViewer(
-                                                child: Image.network(certificateUrl),
+                                                child: Image.network(
+                                                  certificateUrl,
+                                                ),
                                               ),
                                             ),
                                           );
                                         },
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           child: Image.network(
                                             certificateUrl,
                                             height: 200,
                                             fit: BoxFit.contain,
                                             loadingBuilder:
                                                 (context, child, progress) {
-                                              if (progress == null) return child;
-                                              return const Padding(
-                                                padding: EdgeInsets.all(20),
-                                                child: CircularProgressIndicator(),
-                                              );
-                                            },
+                                                  if (progress == null)
+                                                    return child;
+                                                  return const Padding(
+                                                    padding: EdgeInsets.all(20),
+                                                    child:
+                                                        CircularProgressIndicator(),
+                                                  );
+                                                },
                                             errorBuilder:
                                                 (context, error, stackTrace) {
-                                              return const Text(
-                                                "Failed to load certificate",
-                                              );
-                                            },
+                                                  return const Text(
+                                                    "Failed to load certificate",
+                                                  );
+                                                },
                                           ),
                                         ),
                                       )
@@ -811,7 +834,10 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                     ),
                     child: const Text(
                       'Approve',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -862,7 +888,10 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                     ),
                     child: const Text(
                       'Suspend',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -890,7 +919,10 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                     ),
                     child: const Text(
                       'Reinstate',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -919,10 +951,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF9CA3AF),
-                ),
+                style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
               ),
             ],
           ),
@@ -965,6 +994,7 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
     );
   }
 }
+
 Widget _buildStatCard(String title, int count) {
   return Container(
     height: 150,
@@ -995,10 +1025,7 @@ Widget _buildStatCard(String title, int count) {
         const SizedBox(height: 8),
         Text(
           "$count",
-          style: const TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
       ],
     ),
