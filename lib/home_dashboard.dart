@@ -213,8 +213,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     required int count,
     required double ratio,
     required int total,
-    Color color = const Color(0xFF4D51A2),
-    Color trackColor = const Color.fromARGB(255, 193, 194, 218),
+    Color color = const Color.fromARGB(255, 77, 162, 98),
+    Color trackColor = const Color.fromARGB(255, 199, 218, 193),
   }) {
     final pct = total == 0 ? '—' : '${(ratio * 100).toStringAsFixed(1)}%';
 
