@@ -20,8 +20,6 @@ class _UsersDashboardState extends State<UsersDashboard> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  // ─── Age calculator ──────────────────────────────────────────────────────────
-
   int _calculateAge(dynamic birthDate) {
     if (birthDate == null) return 0;
     if (birthDate is! Timestamp) return 0;
@@ -34,8 +32,6 @@ class _UsersDashboardState extends State<UsersDashboard> {
     }
     return age;
   }
-
-  // ─── Stream ──────────────────────────────────────────────────────────────────
 
   Stream<QuerySnapshot> _usersStream() {
     return FirebaseFirestore.instance
@@ -54,8 +50,9 @@ class _UsersDashboardState extends State<UsersDashboard> {
 
   Future<void> _fetchReports() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('reports').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .get();
 
       List<Report> reports = [];
 
@@ -97,7 +94,7 @@ class _UsersDashboardState extends State<UsersDashboard> {
 
   int _doneScansForUser(String userId) =>
       _reportsForUser(userId).where((r) => r.submit == true).length;
-  
+
   String formatDate(DateTime? date) {
     if (date == null) return "Not set";
     return "${date.day.toString().padLeft(2, '0')}/"
@@ -140,28 +137,37 @@ class _UsersDashboardState extends State<UsersDashboard> {
                     child: SearchBar(
                       controller: _searchController,
                       constraints: const BoxConstraints(
-                          minHeight: 44, maxHeight: 44),
+                        minHeight: 44,
+                        maxHeight: 44,
+                      ),
                       shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
                         RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: const BorderSide(
-                              color: Color.fromARGB(255, 149, 152, 209)),
+                            color: Color.fromARGB(255, 149, 152, 209),
+                          ),
                         ),
                       ),
                       leading: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Icon(Icons.search,
-                            color: Color(0xFF4D51A2), size: 18),
+                        child: Icon(
+                          Icons.search,
+                          color: Color(0xFF4D51A2),
+                          size: 18,
+                        ),
                       ),
-                      backgroundColor:
-                          const WidgetStatePropertyAll<Color>(Colors.white),
+                      backgroundColor: const WidgetStatePropertyAll<Color>(
+                        Colors.white,
+                      ),
                       shadowColor: const WidgetStatePropertyAll<Color>(
-                          Color.fromARGB(46, 0, 0, 0)),
+                        Color.fromARGB(46, 0, 0, 0),
+                      ),
                       hintText: 'Search users...',
                       hintStyle: const WidgetStatePropertyAll<TextStyle>(
                         TextStyle(
-                            color: Color.fromARGB(174, 62, 57, 57),
-                            fontSize: 13),
+                          color: Color.fromARGB(174, 62, 57, 57),
+                          fontSize: 13,
+                        ),
                       ),
                       onChanged: (value) =>
                           setState(() => _searchQuery = value.toLowerCase()),
@@ -177,7 +183,8 @@ class _UsersDashboardState extends State<UsersDashboard> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: const Color.fromARGB(255, 149, 152, 209)),
+                          color: const Color.fromARGB(255, 149, 152, 209),
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.04),
@@ -189,22 +196,32 @@ class _UsersDashboardState extends State<UsersDashboard> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _sortOption,
-                          icon: const Icon(Icons.unfold_more,
-                              size: 16, color: Color(0xFF4D51A2)),
+                          icon: const Icon(
+                            Icons.unfold_more,
+                            size: 16,
+                            color: Color(0xFF4D51A2),
+                          ),
                           style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF1A1A2E)),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF1A1A2E),
+                          ),
                           isExpanded: true,
                           items: const [
                             DropdownMenuItem(
-                                value: 'Name A–Z',
-                                child: Text('Name A–Z',
-                                    style: TextStyle(fontSize: 12))),
+                              value: 'Name A–Z',
+                              child: Text(
+                                'Name A–Z',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
                             DropdownMenuItem(
-                                value: 'Name Z–A',
-                                child: Text('Name Z–A',
-                                    style: TextStyle(fontSize: 12))),
+                              value: 'Name Z–A',
+                              child: Text(
+                                'Name Z–A',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
                           ],
                           onChanged: (value) {
                             if (value != null) {
@@ -226,9 +243,11 @@ class _UsersDashboardState extends State<UsersDashboard> {
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(
-                        child: Padding(
-                            padding: EdgeInsets.all(40),
-                            child: CircularProgressIndicator()));
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
                   }
 
                   var docs = snapshot.data!.docs;
@@ -236,10 +255,12 @@ class _UsersDashboardState extends State<UsersDashboard> {
                   if (_searchQuery.isNotEmpty) {
                     docs = docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final name =
-                          (data['name'] ?? '').toString().toLowerCase();
-                      final email =
-                          (data['email'] ?? '').toString().toLowerCase();
+                      final name = (data['name'] ?? '')
+                          .toString()
+                          .toLowerCase();
+                      final email = (data['email'] ?? '')
+                          .toString()
+                          .toLowerCase();
                       return name.contains(_searchQuery) ||
                           email.contains(_searchQuery);
                     }).toList();
@@ -249,8 +270,10 @@ class _UsersDashboardState extends State<UsersDashboard> {
                     return const Padding(
                       padding: EdgeInsets.all(40),
                       child: Center(
-                        child: Text('No users found.',
-                            style: TextStyle(color: Colors.grey)),
+                        child: Text(
+                          'No users found.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
                     );
                   }
@@ -281,78 +304,88 @@ class _UsersDashboardState extends State<UsersDashboard> {
   // ─── Stats row ───────────────────────────────────────────────────────────────
 
   Widget _buildStatsRow() {
-    return LayoutBuilder(builder: (context, constraints) {
-      final cardW = (constraints.maxWidth - 24) / 3;
-      return Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          SizedBox(
-            width: cardW,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .where('role', isEqualTo: 'user')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.docs.length ?? 0;
-                return _buildStatCard('Total Users', count,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardW = (constraints.maxWidth - 24) / 3;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            SizedBox(
+              width: cardW,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .where('role', isEqualTo: 'user')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data?.docs.length ?? 0;
+                  return _buildStatCard(
+                    'Total Users',
+                    count,
                     icon: Icons.people_outline,
-                    color: const Color(0xFF6366F1));
-              },
+                    color: const Color(0xFF6366F1),
+                  );
+                },
+              ),
             ),
-          ),
-          SizedBox(
-            width: cardW,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('reports')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.docs.length ?? 0;
-                return _buildStatCard('Total Scans', count,
+            SizedBox(
+              width: cardW,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('reports')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data?.docs.length ?? 0;
+                  return _buildStatCard(
+                    'Total Scans',
+                    count,
                     icon: Icons.document_scanner_outlined,
-                    color: const Color(0xFF0EA5E9));
-              },
+                    color: const Color(0xFF0EA5E9),
+                  );
+                },
+              ),
             ),
-          ),
-          SizedBox(
-            width: cardW,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('reports')
-                  .where('submit', isEqualTo: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.docs.length ?? 0;
-                return _buildStatCard('Diagnosed Scans', count,
+            SizedBox(
+              width: cardW,
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('reports')
+                    .where('submit', isEqualTo: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data?.docs.length ?? 0;
+                  return _buildStatCard(
+                    'Diagnosed Scans',
+                    count,
                     icon: Icons.check_circle_outline,
-                    color: const Color(0xFF22C55E));
-              },
+                    color: const Color(0xFF22C55E),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 
   // ─── 3-column grid ───────────────────────────────────────────────────────────
 
   Widget _buildUsersGrid(List<QueryDocumentSnapshot> users) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final cardW = (constraints.maxWidth - 20) / 3;
-      return Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: users.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return SizedBox(
-            width: cardW,
-            child: _buildUserCard(data, doc.id),
-          );
-        }).toList(),
-      );
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardW = (constraints.maxWidth - 20) / 3;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: users.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return SizedBox(width: cardW, child: _buildUserCard(data, doc.id));
+          }).toList(),
+        );
+      },
+    );
   }
 
   // ─── Single user card ────────────────────────────────────────────────────────
@@ -368,7 +401,7 @@ class _UsersDashboardState extends State<UsersDashboard> {
     final doctorName = doctorMap?['name'] as String?;
 
     final totalScans = _reportsForUser(userId).length;
-    final doneScans = _doneScansForUser(userId);       // ✅ submit == true
+    final doneScans = _doneScansForUser(userId); // ✅ submit == true
     final pendingScans = _pendingScansForUser(userId); // ✅ submit == false
 
     final initials = name
@@ -411,9 +444,10 @@ class _UsersDashboardState extends State<UsersDashboard> {
                 child: Text(
                   initials,
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -424,21 +458,26 @@ class _UsersDashboardState extends State<UsersDashboard> {
                     Text(
                       name,
                       style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A2E)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A2E),
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       email,
                       style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9CA3AF)),
+                        fontSize: 11,
+                        color: Color(0xFF9CA3AF),
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       '$gender · ${age > 0 ? '$age yrs' : '—'}',
                       style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9CA3AF)),
+                        fontSize: 11,
+                        color: Color(0xFF9CA3AF),
+                      ),
                     ),
                   ],
                 ),
@@ -453,18 +492,28 @@ class _UsersDashboardState extends State<UsersDashboard> {
           Row(
             children: [
               Expanded(
-                  child: _miniStat(
-                      '$totalScans', 'Total Scans', const Color(0xFF6366F1))),
-              Container(
-                  width: 1, height: 32, color: const Color(0xFFE8E8F0)),
+                child: _miniStat(
+                  '$totalScans',
+                  'Total Scans',
+                  const Color(0xFF6366F1),
+                ),
+              ),
+              Container(width: 1, height: 32, color: const Color(0xFFE8E8F0)),
               Expanded(
-                  child: _miniStat(
-                      '$doneScans', 'Done Scans', const Color(0xFF22C55E))),
-              Container(
-                  width: 1, height: 32, color: const Color(0xFFE8E8F0)),
+                child: _miniStat(
+                  '$doneScans',
+                  'Done Scans',
+                  const Color(0xFF22C55E),
+                ),
+              ),
+              Container(width: 1, height: 32, color: const Color(0xFFE8E8F0)),
               Expanded(
-                  child: _miniStat(
-                      '$pendingScans', 'Pending Scans', const Color(0xFFF59E0B))),
+                child: _miniStat(
+                  '$pendingScans',
+                  'Pending Scans',
+                  const Color(0xFFF59E0B),
+                ),
+              ),
             ],
           ),
 
@@ -508,12 +557,18 @@ class _UsersDashboardState extends State<UsersDashboard> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w800, color: color)),
-        Text(label,
-            style:
-                const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
+        ),
       ],
     );
   }
@@ -552,8 +607,12 @@ class _UsersDashboardState extends State<UsersDashboard> {
     );
   }
 
-  Widget _buildStatCard(String title, int count,
-      {required IconData icon, required Color color}) {
+  Widget _buildStatCard(
+    String title,
+    int count, {
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
       height: 130,
       padding: const EdgeInsets.all(16),
@@ -581,14 +640,18 @@ class _UsersDashboardState extends State<UsersDashboard> {
             child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(height: 8),
-          Text('$count',
-              style: const TextStyle(
-                  fontSize: 28, fontWeight: FontWeight.bold)),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade600)),
+          Text(
+            '$count',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
         ],
       ),
     );

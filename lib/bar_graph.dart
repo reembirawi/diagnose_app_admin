@@ -1,7 +1,6 @@
 import 'package:diagnose_app/models/bar_data.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BarGraph extends StatelessWidget {
   const BarGraph({super.key, required this.weeklySummary});
@@ -24,7 +23,7 @@ class BarGraph extends StatelessWidget {
 
     return BarChart(
       BarChartData(
-        maxY: 30,
+        maxY: 10,
         minY: 0,
         barTouchData: BarTouchData(
           enabled: true,
@@ -40,11 +39,7 @@ class BarGraph extends StatelessWidget {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: false,
-            ), // 👈 hides the top numbers
-          ),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -82,7 +77,7 @@ class BarGraph extends StatelessWidget {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: 5,
+          horizontalInterval: 2,
           getDrawingHorizontalLine: (value) => FlLine(
             color: Colors.grey.withOpacity(0.6),
             strokeWidth: 1,

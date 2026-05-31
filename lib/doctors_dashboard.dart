@@ -1,13 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import 'dart:async';
 import 'package:diagnose_app/models/report.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:diagnose_app/weekly_scan_chart.dart';
 import 'package:diagnose_app/filter_tabs.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DoctorsDashboard extends StatefulWidget {
   const DoctorsDashboard({super.key});
@@ -19,7 +16,6 @@ class DoctorsDashboard extends StatefulWidget {
 class _DoctorsDashboardState extends State<DoctorsDashboard> {
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
   List<Report> _reports = [];
-  List<Report> _filteredReports = [];
   String filterTab = "All";
   String sortOption = "Name A–Z";
   bool _reportsLoaded = false;
@@ -54,7 +50,6 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
       if (!mounted) return;
       setState(() {
         _reports = doc;
-        _filteredReports = doc;
         _reportsLoaded = true;
       });
     });
@@ -429,12 +424,13 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
     final birthDate = doctorData['birthDate'];
     final location = doctorData['location'] ?? 'Unknown';
     final status = doctorData['status'] ?? 'pending';
-    final yearsExp = doctorData['years_experience'] ?? 0;
+    final yearsExp = doctorData['yearsOfExperience'] ?? 0;
     final appliedAt = doctorData['created_at'] != null
         ? (doctorData['created_at'] as Timestamp).toDate()
         : null;
     final licenseVerified = doctorData['license_verified'] ?? false;
     final certificateUrl = doctorData['certificateUrl'];
+    final description = doctorData['description'] ?? '';
 
     // Rating = completed / total
     final totalScans = scansDone + scansRemaining;
@@ -734,6 +730,16 @@ class _DoctorsDashboardState extends State<DoctorsDashboard> {
                                               (birthDate as Timestamp?)
                                                   ?.toDate(),
                                             ),
+                                          ),
+                                          _infoCard(
+                                            Icons.medical_services,
+                                            "Years of Experience: ${(yearsExp ?? 0).toString()}",
+                                            "Years of Experience: ${(yearsExp ?? 0).toString()}",
+                                          ),
+                                          _infoCard(
+                                            Icons.description,
+                                            "Years of Experience: ${(yearsExp ?? 0).toString()}",
+                                            description,
                                           ),
                                         ],
                                       ),

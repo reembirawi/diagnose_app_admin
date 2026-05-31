@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import 'dart:async';
-import 'package:diagnose_app/models/report.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:diagnose_app/weekly_scan_chart.dart';
+import 'package:diagnose_app/models/diagnosis_stats_service.dart';
 
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
@@ -16,51 +13,13 @@ class DashboardHome extends StatefulWidget {
 }
 
 class _DashboardHomeState extends State<DashboardHome> {
-
-
   final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-  List<Report> _reports = [];
-  List<Report> _filteredReports = [];
-  final List<Map<String, dynamic>> results = [
-    {'name': 'Medium', 'value': 0.55},
-    {'name': 'Normal', 'value': 0.25},
-    {'name': 'Risky', 'value': 0.05},
-    {'name': 'Not diagnosed yet', 'value': 0.15},
-  ];
-  Future<List<Report>> _getReports() async {
-    try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('reports').get();
-
-      print("FOUND: ${snapshot.docs.length}");
-
-      return snapshot.docs
-          .map((doc) => Report.fromMap(doc.id, doc.data()))
-          .toList();
-    } catch (e) {
-      print("ERROR FETCHING REPORTS: $e");
-      return [];
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _getReports().then((doc) {
-      if (!mounted) return;
-      setState(() {
-        _reports = doc;
-        _filteredReports = doc;
-      });
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        alignment: Alignment.topLeft,
-        child: SingleChildScrollView(
+      alignment: Alignment.topLeft,
+      child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -68,12 +27,8 @@ class _DashboardHomeState extends State<DashboardHome> {
             children: [
               const Text(
                 'Dashboard Overview',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
               ),
-
               Text(
                 "${DateFormat('EEEE').format(DateTime.now())}, "
                 "${DateFormat('MMMM d, y').format(DateTime.now())}",
@@ -82,25 +37,21 @@ class _DashboardHomeState extends State<DashboardHome> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               _buildRow4(),
               const SizedBox(height: 20),
-
               _buildRow21(),
               const SizedBox(height: 20),
-
               _buildRow22(),
               const SizedBox(height: 20),
-
-              // _buildRow1(),
             ],
           ),
         ),
       ),
     );
   }
+
+  // ── Row 1: four stat cards ───────────────────────────────────────────────
 
   Widget _buildRow4() {
     return LayoutBuilder(
@@ -114,32 +65,36 @@ class _DashboardHomeState extends State<DashboardHome> {
             SizedBox(
               width: cardWidth,
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('reports').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('reports')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.data?.docs.length ?? 0;
                   return _buildStatCard("Scans This Month", count, "🔬");
                 },
               ),
             ),
-
             SizedBox(
               width: cardWidth,
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('users')
-                  .where('role', isEqualTo: 'doctor')
-                  .where('status', isEqualTo: 'approved')
-                  .snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .where('role', isEqualTo: 'doctor')
+                    .where('status', isEqualTo: 'approved')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.data?.docs.length ?? 0;
                   return _buildStatCard("Doctors", count, "🩺");
                 },
               ),
             ),
-
             SizedBox(
               width: cardWidth,
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'user').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .where('role', isEqualTo: 'user')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.data?.docs.length ?? 0;
                   return _buildStatCard("Users", count, "👥");
@@ -150,10 +105,10 @@ class _DashboardHomeState extends State<DashboardHome> {
               width: cardWidth,
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .where('role', isEqualTo: 'doctor')
-                  .where('status', isEqualTo: 'pending')
-                  .snapshots(),
+                    .collection('users')
+                    .where('role', isEqualTo: 'doctor')
+                    .where('status', isEqualTo: 'pending')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.data?.docs.length ?? 0;
                   return _buildStatCard("Pending Approvals", count, "⏳");
@@ -166,300 +121,358 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
+  // ── Row 2: weekly chart + live diagnosis breakdown ───────────────────────
+
   Widget _buildRow21() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Flexible(
           flex: 6,
-          child: _buildCard(
-            240,
-            child: Center(
-              child: WeeklyScanChart(),
-            ),
-          ),
+          child: _buildCard(240, child: Center(child: WeeklyScanChart())),
         ),
         const SizedBox(width: 12),
         Flexible(
           flex: 3,
-          child: Center(
-            child: _buildCard(
-              240,
-              child: ListView.builder(
-                padding: EdgeInsets.all(10),
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final result = results[index];
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          child: _buildCard(
+            240,
+            child: StreamBuilder<DiagnosisStats>(
+              stream: diagnosisStatsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF4D51A2),
+                      strokeWidth: 2,
+                    ),
+                  );
+                }
+
+                final stats =
+                    snapshot.data ??
+                    const DiagnosisStats(
+                      benign: 0,
+                      malignant: 0,
+                      notDiagnosed: 0,
+                      total: 0,
+                    );
+
+                return Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        Row(
-                          children: [
-                            Text(
-                              result['name'] as String,
-                                style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                                (100.0 * result['value']  as double).toStringAsFixed(1) + "%",
-                                style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      const Text(
+                        'AI Diagnosis Breakdown',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2D2F6B),
                         ),
-                        Stack(
-                          children: [
-                            Container(
-                              height: 8,
-                              width: 500,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 193, 194, 218),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-
-                            Container(
-                              height: 8,
-                              width: 500 * result['value'] as double,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4D51A2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                      ],
-                    );
-                  },
-                ),
-              )
+                      ),
+                      const SizedBox(height: 12),
+                      _diagnosisBar(
+                        label: 'Benign',
+                        count: stats.benign,
+                        ratio: stats.benignRatio,
+                        total: stats.total,
+                      ),
+                      const SizedBox(height: 10),
+                      _diagnosisBar(
+                        label: 'Malignant',
+                        count: stats.malignant,
+                        ratio: stats.malignantRatio,
+                        total: stats.total,
+                        color: const Color(0xFFD85A30),
+                        trackColor: const Color.fromARGB(255, 240, 200, 185),
+                      ),
+                      const SizedBox(height: 10),
+                      _diagnosisBar(
+                        label: 'Not diagnosed yet',
+                        count: stats.notDiagnosed,
+                        ratio: stats.notDiagnosedRatio,
+                        total: stats.total,
+                        color: const Color(0xFF888780),
+                        trackColor: const Color.fromARGB(255, 210, 210, 205),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ],
     );
   }
 
+  /// One labelled progress bar row for the diagnosis breakdown panel.
+  Widget _diagnosisBar({
+    required String label,
+    required int count,
+    required double ratio,
+    required int total,
+    Color color = const Color(0xFF4D51A2),
+    Color trackColor = const Color.fromARGB(255, 193, 194, 218),
+  }) {
+    final pct = total == 0 ? '—' : '${(ratio * 100).toStringAsFixed(1)}%';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              total == 0 ? '—' : '$count  ($pct)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        LayoutBuilder(
+          builder: (context, constraints) => Stack(
+            children: [
+              Container(
+                height: 8,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: trackColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              Container(
+                height: 8,
+                width: constraints.maxWidth * ratio,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Row 3: pending doctors + recent users ────────────────────────────────
+
   Widget _buildRow22() {
     return Row(
       children: [
-        Expanded(child: 
-          _buildCard(
-            350,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users')
-              .where('role', isEqualTo: 'doctor')
-              .where('status', isEqualTo: 'pending')
-              .snapshots(),
-              builder: (context, snapshot) {
-                final count = snapshot.data?.docs.length ?? 0;
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "Doctors Pending Approval",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                        ),
-                        Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          alignment: Alignment.center,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 236, 176, 161),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                              "${count} waiting",
-                              style: TextStyle(fontSize: 14, color: const Color.fromARGB(255, 155, 64, 41)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Container(
-                        height: 250,
-                        padding: const EdgeInsets.all(0),
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero, // ✅ removes default padding
-                            itemCount: snapshot.data?.docs.length ?? 0,
-                            itemBuilder: (context, index) {
-                              final doc = snapshot.data!.docs[index];
-                              final name = doc['name'] ?? 'Unknown';
-                              final email = doc['email'] ?? 'Unknown';
+        Expanded(child: _buildPendingDoctorsCard()),
+        const SizedBox(width: 12),
+        Expanded(child: _buildRecentUsersCard()),
+      ],
+    );
+  }
 
-                              return Column(
+  Widget _buildPendingDoctorsCard() {
+    return _buildCard(
+      350,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'doctor')
+            .where('status', isEqualTo: 'pending')
+            .snapshots(),
+        builder: (context, snapshot) {
+          final count = snapshot.data?.docs.length ?? 0;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    "Doctors Pending Approval",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(255, 236, 176, 161),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      "$count waiting",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color.fromARGB(255, 155, 64, 41),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: count,
+                  itemBuilder: (context, index) {
+                    final doc = snapshot.data!.docs[index];
+                    final name = doc['name'] ?? 'Unknown';
+                    final email = doc['email'] ?? 'Unknown';
+                    return Column(
+                      children: [
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              241,
+                              225,
+                              225,
+                            ),
+                            child: Text(
+                              name.isNotEmpty ? name[0] : '?',
+                              style: const TextStyle(color: Color(0xFF4D51A2)),
+                            ),
+                          ),
+                          title: Text(
+                            "Dr. $name",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          subtitle: Text(email),
+                        ),
+                        const Divider(),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildRecentUsersCard() {
+    return _buildCard(
+      350,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .where('role', isEqualTo: 'user')
+            .snapshots(),
+        builder: (context, snapshot) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Recent Users",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: snapshot.data?.docs.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final doc = snapshot.data!.docs[index];
+                    final name = doc['name'] ?? 'Unknown';
+                    final email = doc['email'] ?? 'Unknown';
+
+                    return FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('reports')
+                          .where('userId', isEqualTo: doc.id)
+                          .get(),
+                      builder: (context, reportSnapshot) {
+                        final scanCount = reportSnapshot.data?.docs.length ?? 0;
+                        return Column(
+                          children: [
+                            ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              minLeadingWidth: 40,
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: const Color.fromRGBO(
+                                  221,
+                                  221,
+                                  255,
+                                  1,
+                                ),
+                                child: Text(
+                                  name.isNotEmpty ? name[0] : '?',
+                                  style: const TextStyle(
+                                    color: Color.fromRGBO(77, 81, 162, 100),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              title: Row(
                                 children: [
-                                  ListTile(
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: CircleAvatar(
-                                      backgroundColor: const Color.fromARGB(255, 241, 225, 225),
-                                      child: Text(
-                                        name.isNotEmpty ? name[0] : '?',
-                                        style: const TextStyle(color: Color(0xFF4D51A2)),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      "Dr. $name",
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    subtitle: Text(email),
                                   ),
-                                  const Divider(),
+                                  Text(
+                                    "$scanCount scans",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color.fromRGBO(77, 81, 162, 1),
+                                    ),
+                                  ),
                                 ],
-                              );
-                            },
-                          ),
-                        ),
-                      )
-                    ],
-                  );
-                }
+                              ),
+                              subtitle: Text(email),
+                            ),
+                            const Divider(),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: 
-          _buildCard(
-            350,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'user').snapshots(),
-              builder: (context, snapshot) {
-                return Column(
-                  mainAxisAlignment:MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                      Text(
-                        "Recent Users",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                      ),
-                      SizedBox(height: 20),
-                      Container(
-                        height: 250,
-                        padding: const EdgeInsets.all(0),
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: snapshot.data?.docs.length ?? 0,
-                            itemBuilder: (context, index) {
-                              final doc = snapshot.data!.docs[index];
-
-                              final name = doc['name'] ?? 'Unknown';
-                              final email = doc['email'] ?? 'Unknown';
-
-                              return FutureBuilder<QuerySnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('reports')
-                                    .where('userId', isEqualTo: doc.id)
-                                    .get(),
-
-                                builder: (context, reportSnapshot) {
-
-                                  int scanCount = 0;
-
-                                  if (reportSnapshot.hasData) {
-                                    scanCount = reportSnapshot.data!.docs.length;
-                                  }
-
-                                  return Column(
-                                    children: [
-                                      ListTile(
-                                        dense: true,
-                                        contentPadding: EdgeInsets.zero,
-                                        minLeadingWidth: 40,
-
-                                        leading: CircleAvatar(
-                                          radius: 18,
-                                          backgroundColor:
-                                              const Color.fromRGBO(221, 221, 255, 1),
-
-                                          child: Text(
-                                            name.isNotEmpty ? name[0] : '?',
-                                            style: const TextStyle(
-                                              color: Color.fromRGBO(77, 81, 162, 100),
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-
-                                        title: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                name,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-
-                                            Text(
-                                              "$scanCount scans",
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Color.from(alpha: 1, red: 0.302, green: 0.318, blue: 0.635),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        subtitle: Text(email),
-                                      ),
-
-                                      const Divider(),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      )
-                    ],
-                  );
-                }
-              ),
-          ),
-        ),
-      ],
+            ],
+          );
+        },
+      ),
     );
   }
 
-  // Widget _buildRow1() {
-  //   return Row(
-  //     children: [
-  //       Expanded(child: _buildCard(
-  //         230,
-  //         child: Text(
-  //           "Card 1",
-  //           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-  //         ),
-  //       )),
-  //     ],
-  //   );
-  // }
+  // ── Shared card shell ────────────────────────────────────────────────────
 
   Widget _buildCard(double height, {required Widget child}) {
     return Container(
@@ -481,6 +494,8 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 }
+
+// ── Top-level stat card (unchanged from original) ────────────────────────────
 
 Widget _buildStatCard(String title, int count, String icon) {
   return Container(
@@ -511,10 +526,7 @@ Widget _buildStatCard(String title, int count, String icon) {
             decoration: const BoxDecoration(
               color: Color.from(alpha: 0.2, red: 1, green: 0.859, blue: 0.498),
             ),
-            child: Text(
-              icon,
-              style: const TextStyle(fontSize: 20),
-            ),
+            child: Text(icon, style: const TextStyle(fontSize: 20)),
           ),
         ),
         const SizedBox(height: 16),
@@ -529,10 +541,7 @@ Widget _buildStatCard(String title, int count, String icon) {
         const SizedBox(height: 8),
         Text(
           "$count",
-          style: const TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
       ],
     ),

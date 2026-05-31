@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:diagnose_app/profile.dart';
 import 'package:diagnose_app/users_dashboard.dart';
 import 'package:diagnose_app/doctors_dashboard.dart';
 import 'package:diagnose_app/home_dashboard.dart';
@@ -55,12 +55,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           actions: [
             IconButton(
               onPressed: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (context) => const ProfilePage(),
-                //   ),
-                // );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
               },
               icon: const Icon(
                 Icons.person_rounded,
@@ -88,11 +86,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   children: [
                     // Logo
                     Padding(
-                      padding: const EdgeInsets.only(
-                        left: 10,
-                        bottom: 10,
-                      ),
-                      child:  Text(
+                      padding: const EdgeInsets.only(left: 10, bottom: 10),
+                      child: Text(
                         "Dermalayzer",
                         style: const TextStyle(
                           fontSize: 30,
@@ -102,10 +97,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
 
-                    const Divider(
-                      color: Colors.white,
-                      thickness: 1,
-                    ),
+                    const Divider(color: Colors.white, thickness: 1),
 
                     Expanded(
                       child: ListView.builder(
@@ -113,11 +105,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         itemCount: items.length,
 
                         itemBuilder: (context, index) {
-                          final bool isSelected =
-                              selectedIndex == index;
+                          final bool isSelected = selectedIndex == index;
 
-                          final bool isHovered =
-                              hoveredIndex == index;
+                          final bool isHovered = hoveredIndex == index;
 
                           return MouseRegion(
                             onEnter: (_) {
@@ -133,17 +123,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             },
 
                             child: AnimatedContainer(
-                              duration: const Duration(
-                                milliseconds: 200,
-                              ),
+                              duration: const Duration(milliseconds: 200),
 
                               margin: const EdgeInsets.symmetric(
                                 vertical: 4,
                                 horizontal: 6,
                               ),
 
-                              transform:
-                                  Matrix4.translationValues(
+                              transform: Matrix4.translationValues(
                                 isSelected || isHovered ? 10 : 0,
                                 0,
                                 0,
@@ -151,37 +138,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color.fromARGB(
-                                        255,
-                                        19,
-                                        20,
-                                        41,
-                                      )
+                                    ? const Color.fromARGB(255, 19, 20, 41)
                                     : isHovered
-                                        ? const Color.fromRGBO(
-                                            35,
-                                            37,
-                                            73,
-                                            0.4,
-                                          )
-                                        : Colors.transparent,
+                                    ? const Color.fromRGBO(35, 37, 73, 0.4)
+                                    : Colors.transparent,
 
-                                borderRadius:
-                                    BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(10),
                               ),
 
                               child: ListTile(
                                 iconColor: Colors.white,
                                 textColor: Colors.white,
 
-                                leading: Icon(
-                                  items[index]['icon']
-                                      as IconData,
-                                ),
+                                leading: Icon(items[index]['icon'] as IconData),
 
                                 title: Text(
-                                  items[index]['title']
-                                      as String,
+                                  items[index]['title'] as String,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -202,9 +174,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
             ),
-            Expanded(
-              child: pages[selectedIndex],
-            ),
+            Expanded(child: pages[selectedIndex]),
           ],
         ),
       ),
