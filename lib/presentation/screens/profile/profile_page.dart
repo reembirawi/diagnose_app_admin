@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:diagnose_app/login_page.dart';
+import 'package:diagnose_app/presentation/screens/login/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart' as gf;
@@ -377,7 +377,7 @@ class ProfilePage extends StatelessWidget {
             await FirebaseAuth.instance.signOut();
             if (context.mounted) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginForm()),
+                MaterialPageRoute(builder: (_) => const LoginPage()),
                 (_) => false,
               );
             }

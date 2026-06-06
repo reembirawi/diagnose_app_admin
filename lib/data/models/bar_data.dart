@@ -1,4 +1,4 @@
-import 'package:diagnose_app/models/individual_bar.dart';
+import 'package:diagnose_app/data/models/individual_bar.dart';
 
 class BarData {
   final int sunAmount;
